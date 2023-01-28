@@ -4,7 +4,8 @@
     <div class="d-sm-flex align-items-center justify-content-between mb-4">
         <h1 class="h3 mb-0 text-gray-800">Create Product</h1>
     </div>
-    <form action="{{ route('product.store') }}" method="post" autocomplete="off" spellcheck="false">
+    <form action="{{ route('product.store') }}" method="post" enctype="multipart/form-data">
+        @csrf
         <section>
             <div class="row">
                 <div class="col-md-6">
@@ -44,11 +45,18 @@
                     <div class="card shadow mb-4">
                         <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between"><h6
                                 class="m-0 font-weight-bold text-primary">Media</h6></div>
-                        <div class="card-body border">
+                        {{-- <div class="card-body border">
                             <div id="file-upload" class="dropzone dz-clickable">
                                 <div class="dz-default dz-message"><span>Drop files here to upload</span></div>
                             </div>
-                        </div>
+                        </div> --}}
+                        <div class="form-group">
+                            <input type="file" name="product_images[]"
+                                   id="product_images"
+                                   required
+                                   multiple="multiple"
+                                   accept="image/*"
+                                   class="form-control"></div>
                     </div>
                 </div>
                 <!--                Variants-->
@@ -87,7 +95,7 @@
                     </div>
                 </div>
             </div>
-            <button type="button" class="btn btn-lg btn-primary">Save</button>
+            <button type="submit" class="btn btn-lg btn-primary">Save</button>
             <button type="button" class="btn btn-secondary btn-lg">Cancel</button>
         </section>
     </form>
@@ -95,4 +103,60 @@
 
 @push('page_js')
     <script type="text/javascript" src="{{ asset('js/product.js') }}"></script>
+
+    <script>
+        function addVariantTemplate() {
+
+        $("#variant-sections").append(`<div class="row">
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label for="">Option</label>
+                                    <select id="select2-option-${currentIndex}" data-index="${currentIndex}" name="product_variant[${currentIndex}][option]" class="form-control custom-select select2 select2-option">
+
+                                        @foreach ($variants as  $variant)
+                                            <option value="{{ $variant->id }}">
+                                                {{ $variant->title}}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-8">
+                                <div class="form-group">
+                                    <label class="d-flex justify-content-between">
+                                        <span>Value</span>
+                                        <a href="#" class="remove-btn" data-index="${currentIndex}" onclick="removeVariant(event, this);">Remove</a>
+                                    </label>
+                                    <select id="select2-value-${currentIndex}" data-index="${currentIndex}" name="product_variant[${currentIndex}][value][]" class="select2 select2-value form-control custom-select" multiple="multiple">
+                                    </select>
+                                </div>
+                            </div>
+                        </div>`);
+
+$(`#select2-option-${currentIndex}`).select2({ placeholder: "Select Option", theme: "bootstrap4" });
+
+$(`#select2-value-${currentIndex}`)
+    .select2({
+        tags: true,
+        multiple: true,
+        placeholder: "Type tag name",
+        allowClear: true,
+        theme: "bootstrap4"
+
+    })
+    .on('change', function() {
+        updateVariantPreview();
+    });
+
+indexs.push(currentIndex);
+
+currentIndex = (currentIndex + 1);
+
+if (indexs.length >= 3) {
+    $("#add-btn").hide();
+} else {
+    $("#add-btn").show();
+}
+}
+    </script>
 @endpush

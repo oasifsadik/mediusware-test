@@ -3,8 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Models\Product;
+use App\Models\ProductImage;
+use App\Models\ProductVariant;
+use App\Models\ProductVariantPrice;
 use App\Models\Variant;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class ProductController extends Controller
 {
@@ -13,9 +17,17 @@ class ProductController extends Controller
      *
      * @return \Illuminate\Contracts\Foundation\Application|\Illuminate\Contracts\View\Factory|\Illuminate\Http\Response|\Illuminate\View\View
      */
-    public function index()
+    public function index(Request $request)
     {
-        return view('products.index');
+        $sql = Product::with('variantPrice');
+
+        if($request->title) {
+            $sql->where('title', 'like', '%' . $request->title . '%');
+        }
+
+        $products = $sql->paginate(10);
+
+        return view('products.index',compact('products'));
     }
 
     /**
@@ -37,7 +49,63 @@ class ProductController extends Controller
      */
     public function store(Request $request)
     {
+        $product = new Product();
+        $product->title = $request->product_name;
+        $product->sku = $request->product_sku;
+        $product->description = $request->product_description;
+        $product->save();
 
+        if($product) {
+            // Image upload
+            if ($request->hasFile('product_images'))
+            {
+                $fileData = [];
+                foreach($request->product_images as $image) {
+                    $file = $image;
+                    $extention =$file->getClientOriginalExtension();
+                    $filename = time().'.'.$extention;
+                    $file -> move('product-image/',$filename);
+
+                    $fileData[] = [
+                        'product_id' => $product->id,
+                        'file_path' => asset('product-image/'. $filename),
+                    ];
+                }
+                ProductImage::insert($fileData);
+            }
+
+            // Product variant
+            $productVariants = $variantPrices = [];
+            foreach ($request->product_variant as $var) {
+                foreach ($var['value'] as $val) {
+                    $productVariants[] = [
+                        'variant_id' => $var['option'],
+                        'variant' => $val,
+                        'product_id' => $product->id,
+                        'created_at' => now(),
+                        'updated_at' => now()
+                    ];
+                }
+            }
+
+            ProductVariant::insert($productVariants);
+
+            foreach ($request->product_preview as $val) {
+                $variants = explode('/', $val['variant']);
+                $variantPrices[] = [
+                    'product_variant_one' => ProductVariant::where(['product_id' => $product->id, 'variant' => $variants[0] ?? null])->first()->id ?? null,
+                    'product_variant_two' => ProductVariant::where(['product_id' => $product->id, 'variant' => $variants[1] ?? null])->first()->id ?? null,
+                    'product_variant_three' => ProductVariant::where(['product_id' => $product->id, 'variant' => $variants[2] ?? null])->first()->id ?? null,
+                    'price' => $val['price'],
+                    'stock' => $val['stock'],
+                    'product_id' => $product->id,
+                    'created_at' => now(),
+                    'updated_at' => now()
+                ];
+            }
+
+            ProductVariantPrice::insert($variantPrices);
+        }
     }
 
 
@@ -86,4 +154,5 @@ class ProductController extends Controller
     {
         //
     }
+
 }

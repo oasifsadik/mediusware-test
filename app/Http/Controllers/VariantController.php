@@ -40,7 +40,7 @@ class VariantController extends Controller
         $variant = new Variant();
         $variant->fill($request->all());
         $variant->save();
-        return redirect()->back()->with('success', 'Variant Saved');
+        return redirect(route('product-variant.index'))->with('success', 'Variant Saved');
     }
 
     /**
@@ -60,9 +60,9 @@ class VariantController extends Controller
      * @param \App\Models\Variant $variant
      * @return \Illuminate\Contracts\Foundation\Application|\Illuminate\Contracts\View\Factory|\Illuminate\Http\Response|\Illuminate\View\View
      */
-    public function edit($id)
+    public function edit($product_variant)
     {
-        $product_variant = Variant::findOrFail($id);
+        $product_variant = Variant::findOrFail($product_variant);
         return view('products.variant.edit', compact('product_variant'));
     }
 
@@ -72,9 +72,9 @@ class VariantController extends Controller
      * @param \Illuminate\Http\Request $request
      * @return \Illuminate\Http\RedirectResponse
      */
-    public function update(VariantRequest $request, $id)
+    public function update(VariantRequest $request, $product_variant)
     {
-        $variant = Variant::findOrFail($id);
+        $variant = Variant::findOrFail($product_variant);
         $variant->fill($request->all());
         $variant->save();
         return redirect()->back()->with('success', 'Variant Updated');
@@ -86,8 +86,10 @@ class VariantController extends Controller
      * @param \App\Models\Variant $variant
      * @return \Illuminate\Http\Response
      */
-    public function destroy(Variant $variant)
+    public function destroy($product_variant)
     {
-        //
+        $variant = Variant::find($product_variant);
+        $variant->delete();
+        return redirect()->back();
     }
 }
